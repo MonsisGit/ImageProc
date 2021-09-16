@@ -49,7 +49,13 @@ Mat create_hist(Mat image) {
 	}
 }
 
-Mat take_photo() {
+Mat convert_to_greyscale(Mat image) {
+	Mat img_greyscale;
+	cvtColor(image, img_greyscale, COLOR_BGR2GRAY);
+	return img_greyscale;
+}
+
+Mat take_photo(bool greyscale, bool canny) {
 	cv::VideoCapture camera(0);
 	if (!camera.isOpened()) {
 		std::cerr << "ERROR: Could not open camera" << std::endl;
@@ -61,8 +67,16 @@ Mat take_photo() {
 	while (true) {
 		camera >> frame;
 		histImage = create_hist(frame);
-		Canny(frame, frame_canny, 25, 75);
-		imshow("Canny Edge Detector", frame_canny);
+
+		if (canny){
+			Canny(frame, frame_canny, 25, 75);
+			imshow("Canny Edge Detector", frame_canny);
+		}
+		if (greyscale) {
+			frame = convert_to_greyscale(frame);
+
+		}
+		
 		imshow("Video Stream", frame);
 		imshow("Histogram of Video Capture", histImage);
 		if (waitKey(1) >= 0) {
@@ -92,7 +106,6 @@ void print_image_attributes(string img_path, string window_name, string file_typ
 	}
 }
 
-
 int main()
 {
 	const string Resource_path = "Resource/";
@@ -102,9 +115,9 @@ int main()
 	string delimiter = ".";
 	string file_type = img_path.substr(img_path.find(delimiter) + 1, img_path.length());
 
-	show_image(img_path, window_name);
-	print_image_attributes(img_path, window_name, file_type);
-	Mat image = take_photo();
+	//show_image(img_path, window_name);
+	//print_image_attributes(img_path, window_name, file_type);
+	Mat image = take_photo(true, false);
 	save_image(image, img_path, image_save_format);
 	return 0;
 }

@@ -23,7 +23,7 @@
     <Image Include="..\..\..\..\Users\simon\OneDrive\Pictures\test_img.jpg">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Resource\webcam_test.jpg">
+    <Image Include="Resource\webcam_test.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

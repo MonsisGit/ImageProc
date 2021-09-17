@@ -1,30 +1,79 @@
 
 #include <stdio.h> 
 #include <iostream> 
+#include <cmath>
 #include<opencv2/opencv.hpp> 
 #include <opencv2/highgui/highgui.hpp>
 using namespace cv;
 using namespace std;
 
+struct moments_data {
+	double theta;
+	int px;
+	int py;
+
+}mom;
+
+struct mass_center {
+	int x;
+	int y;
+};
+
 void show_image(string img_path, string window_name) {
 	Mat image = imread(img_path);
-	namedWindow(window_name);
 	imshow(window_name, image);
 	waitKey(3000);
 }
 
-Mat convert_to_greyscale(Mat image) {
-	Mat img_greyscale;
-	cvtColor(image, img_greyscale, COLOR_BGR2GRAY);
-	return img_greyscale;
+double reduced_central_moment(int p, int q, mass_center center, Mat img) {
+	double moment = 0;
+	for (double i = 0; i < img.cols; i++) {
+		for (double j = 0; j < img.rows; j++) {
+			if (img.at<uchar>(j, i) != 0){
+			moment += pow((i - center.x), p)*pow((j - center.y), q);
+			}
+		}
+	}
+	return moment;
 }
 
-Mat get_center_of_Mass() {
-	Mat img_original = imread("Resource/PEN.pgm");
-	img_original = convert_to_greyscale(img_original);
-	Mat img;
-	threshold(img_original, img, 100, 255, THRESH_BINARY);
+void principal_axis(Mat img, mass_center center) {
+	double moment_0_0 = reduced_central_moment(0, 0, center, img);
+	cout << moment_0_0 << endl;
 
+	double moment_2_0 = reduced_central_moment(2, 0, center, img)/moment_0_0;
+	double moment_0_2 = reduced_central_moment(0, 2, center, img) / moment_0_0;
+	double moment_1_1 = reduced_central_moment(1, 1, center, img) / moment_0_0;
+	Moments m = moments(img, true);
+
+	//mom.theta = atan((2*m.m11) / (m.m20 -m.m02))/2;
+	mom.theta = atan((2 * moment_1_1) / (moment_2_0 - moment_0_2)) / 2;
+	cout << "Principal Angle: " << mom.theta * (180.0 / 3.141592653589793238463) << endl;
+
+	mom.px = center.x + img.cols / 4 * cos(mom.theta);
+	mom.py = center.y + img.rows / 4 * sin(mom.theta);
+
+
+}
+
+
+Mat image_threshold(Mat img, int thresh) {
+	for (int i = 0; i < img.cols; i++) {
+		for (int j = 0; j < img.rows; j++) {
+			if (img.at<uchar>(j, i) > thresh) {
+				img.at<uchar>(j, i) = 0;
+			}
+			else {
+				img.at<uchar>(j, i) = 255;
+			}
+
+		}
+	}
+	return img;
+}
+
+
+mass_center get_center_of_Mass(Mat img) {
 	int sumx = 0, sumy= 0, black_pix = 0;
 
 	for (int i = 0; i < img.cols; i++) {
@@ -39,14 +88,26 @@ Mat get_center_of_Mass() {
 	}
 	sumx /= black_pix;
 	sumy /= black_pix;
+	mass_center result = { sumx,sumy };
+	return result;
+}
 
-	drawMarker(img_original, Point(sumx,sumy), Scalar(255, 255, 255), MARKER_CROSS, 20, 2);
-	namedWindow("threshold");
-	imshow("threshold", img);
-	imshow("original", img_original);
+
+
+void test_center_of_mass() {
+	Mat img = imread("Resource/PEN.pgm");
+
+	rotate(img, img, ROTATE_90_CLOCKWISE);
+	cvtColor(img, img, COLOR_BGR2GRAY);
+	img = image_threshold(img,100);
+	mass_center result = get_center_of_Mass(img);
+	principal_axis(img, result);
+	cvtColor(img, img, COLOR_GRAY2BGR);
+	line(img, Point(mom.px,mom.py), Point(result.x,result.y), Scalar(0, 0, 255),
+		2, LINE_4);
+	drawMarker(img, Point(result.x, result.y), Scalar(0, 0, 255), MARKER_CROSS, 20, 2);
+	imshow("original", img);
 	waitKey(0);
-
-	return img;
 }
 
 
@@ -85,7 +146,8 @@ Mat create_hist(Mat image, bool greyscale) {
 			return histImage;
 		}
 		else {
-			Mat g_plane = image;
+			Mat g_plane;
+			cvtColor(image, g_plane, COLOR_BGR2GRAY);
 			//split(image, bgr_planes);
 			int histSize = 256;
 			float range[] = { 0, 256 }; //the upper boundary is exclusive
@@ -111,12 +173,7 @@ Mat create_hist(Mat image, bool greyscale) {
 
 
 
-Mat apply_threshold(Mat image, int thresh) {
-	threshold(image, image, thresh, 255, THRESH_BINARY);
-	return image;
-}
-
-Mat take_photo(bool greyscale, bool canny=false, int threshold=0) {
+Mat take_photo(bool greyscale, bool canny=false, int thresh=0) {
 	cv::VideoCapture camera(0);
 	if (!camera.isOpened()) {
 		std::cerr << "ERROR: Could not open camera" << std::endl;
@@ -125,26 +182,33 @@ Mat take_photo(bool greyscale, bool canny=false, int threshold=0) {
 	namedWindow("Webcam", 512);
 	cout << "Taking photo with webcam";
 	Mat frame, frame_canny, histImage;
+	namedWindow("Video Stream");
+	createTrackbar("Binary Threshold", "Video Stream", &thresh, 255);
 	while (true) {
 		camera >> frame;
+		histImage = create_hist(frame, greyscale);
 
 		if (canny){
 			Canny(frame, frame_canny, 25, 75);
 			imshow("Canny Edge Detector", frame_canny);
 		}
 		if (greyscale) {
-			frame = convert_to_greyscale(frame);
-			if (threshold > 0) {
-				frame = apply_threshold(frame, threshold);
+			cvtColor(frame, frame, COLOR_BGR2GRAY);
+			if (thresh > 0) {
+				frame = image_threshold(frame, thresh);
+				mass_center result = get_center_of_Mass(frame);
+				cvtColor(frame, frame, COLOR_GRAY2BGR);
+				drawMarker(frame, Point(result.x, result.y), Scalar(0, 0, 255), MARKER_CROSS, 20, 2);
+
 			}
 
 		}
-		histImage = create_hist(frame, greyscale);
 
 		
 		imshow("Video Stream", frame);
 		imshow("Histogram of Video Capture", histImage);
 		if (waitKey(1) >= 0) {
+			destroyAllWindows();
 			break;
 		}
 	}
@@ -182,9 +246,9 @@ int main()
 
 	//show_image(img_path, window_name);
 	//print_image_attributes(img_path, window_name, file_type);
-	//Mat image = take_photo(true, false, 128);
+	//Mat image = take_photo(true, false, 100);
 	//save_image(image, img_path, image_save_format);
-	Mat a = get_center_of_Mass();
+	test_center_of_mass();
 	return 0;
 }
 

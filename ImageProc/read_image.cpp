@@ -19,6 +19,25 @@ struct mass_center {
 	int y;
 };
 
+Mat openingMorphological(Mat img)
+{
+
+	int morph_size = 2;
+	Mat element = getStructuringElement(
+		MORPH_RECT,
+		Size(morph_size + 1,
+			morph_size + 1),
+		Point(morph_size,
+			morph_size));
+	Mat output;
+
+	// Opening
+	morphologyEx(img, img,
+		MORPH_OPEN, element,
+		Point(-1, -1), 2);
+	return img;
+}
+
 void show_image(string img_path, string window_name) {
 	Mat image = imread(img_path);
 	imshow(window_name, image);
@@ -46,12 +65,12 @@ void principal_axis(Mat img, mass_center center) {
 	double moment_1_1 = reduced_central_moment(1, 1, center, img) / moment_0_0;
 	Moments m = moments(img, true);
 
-	//mom.theta = atan((2*m.m11) / (m.m20 -m.m02))/2;
-	mom.theta = atan((2 * moment_1_1) / (moment_2_0 - moment_0_2)) / 2;
+	mom.theta =  atan2((m.m20 -m.m02), (2 * m.m11) )/2;
+	//mom.theta =  atan2((moment_2_0 - moment_0_2), (2 * moment_1_1)) / 2;
 	cout << "Principal Angle: " << mom.theta * (180.0 / 3.141592653589793238463) << endl;
 
 	mom.px = center.x + img.cols / 4 * cos(mom.theta);
-	mom.py = center.y + img.rows / 4 * sin(mom.theta);
+	mom.py = center.y + img.cols / 4 * sin(mom.theta);
 
 
 }
@@ -78,7 +97,7 @@ mass_center get_center_of_Mass(Mat img) {
 
 	for (int i = 0; i < img.cols; i++) {
 		for (int j = 0; j < img.rows; j++) {
-			if (img.at<uchar>(j,i) == 0) {
+			if (img.at<uchar>(j,i) == 255) {
 				sumx += i;
 				sumy += j;
 				black_pix += 1;
@@ -86,8 +105,10 @@ mass_center get_center_of_Mass(Mat img) {
 
 		}
 	}
-	sumx /= black_pix;
-	sumy /= black_pix;
+	if (black_pix != 0) {
+		sumx /= black_pix;
+		sumy /= black_pix;
+	}
 	mass_center result = { sumx,sumy };
 	return result;
 }
@@ -96,17 +117,23 @@ mass_center get_center_of_Mass(Mat img) {
 
 void test_center_of_mass() {
 	Mat img = imread("Resource/PEN.pgm");
+	//rotate(img, img, ROTATE_90_CLOCKWISE);
 
-	rotate(img, img, ROTATE_90_CLOCKWISE);
 	cvtColor(img, img, COLOR_BGR2GRAY);
-	img = image_threshold(img,100);
+	img = image_threshold(img,90);
+	int k = 0;
+	while (k < 1) {
+		img = openingMorphological(img);
+		k++;
+	}
+
 	mass_center result = get_center_of_Mass(img);
 	principal_axis(img, result);
 	cvtColor(img, img, COLOR_GRAY2BGR);
 	line(img, Point(mom.px,mom.py), Point(result.x,result.y), Scalar(0, 0, 255),
 		2, LINE_4);
 	drawMarker(img, Point(result.x, result.y), Scalar(0, 0, 255), MARKER_CROSS, 20, 2);
-	imshow("original", img);
+	imshow("thresh", img);
 	waitKey(0);
 }
 
@@ -246,9 +273,9 @@ int main()
 
 	//show_image(img_path, window_name);
 	//print_image_attributes(img_path, window_name, file_type);
-	//Mat image = take_photo(true, false, 100);
+	Mat image = take_photo(true, false, 100);
 	//save_image(image, img_path, image_save_format);
-	test_center_of_mass();
+	//test_center_of_mass();
 	return 0;
 }
 

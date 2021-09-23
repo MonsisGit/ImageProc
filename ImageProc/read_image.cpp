@@ -71,6 +71,17 @@ double hue_moment(Mat img, mass_center center, int p, int q) {
 	return hue_first;
 }
 
+Mat pad_image(Mat img, int pad_width = 1, int pad_val = 0) {
+	Mat img_padded = Mat(img.rows + pad_width * 2, img.cols + pad_width * 2,
+		img.type(), Scalar(pad_val));
+
+	for (int i = 0; i < img.cols; i++) {
+		for (int j = 0; j < img.rows; j++) {
+			img_padded.at<uchar>(j + pad_width, i + pad_width) = img.at<uchar>(j, i);
+		}
+	}
+	return img_padded;
+}
 
 void principal_axis(Mat img, mass_center center) {
 	double moment_0_0 = reduced_central_moment(0, 0, center, img);
@@ -80,7 +91,7 @@ void principal_axis(Mat img, mass_center center) {
 	double moment_1_1 = reduced_central_moment(1, 1, center, img) / moment_0_0;
 
 	mom.theta =  atan2((2 * moment_1_1), (moment_2_0 - moment_0_2)) / 2;
-	cout << "Principal Angle: " << mom.theta * (180.0 / 3.141592653589793238463) << endl;
+	cout << "Principal Angle: " << mom.theta * (180.0 / 3.1415926535) << endl;
 
 	mom.px = center.x + img.rows / 2 * cos(mom.theta);
 	mom.py = center.y + img.rows / 2 * sin(mom.theta);
@@ -132,6 +143,7 @@ void test_center_of_mass() {
 	//Rect myROI(0, 0, 200, 200);
 	//Mat img = img_new(myROI);
 	Mat img_rotated;
+	//img = pad_image(img, 1, 0);
 
 	cvtColor(img, img, COLOR_BGR2GRAY);
 	img = image_threshold(img,90);

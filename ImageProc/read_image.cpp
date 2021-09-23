@@ -7,6 +7,7 @@
 using namespace cv;
 using namespace std;
 
+
 struct moments_data {
 	double theta;
 	double px;
@@ -14,10 +15,12 @@ struct moments_data {
 
 }mom;
 
+
 struct mass_center {
 	int x;
 	int y;
 };
+
 
 Mat openingMorphological(Mat img)
 {
@@ -38,11 +41,13 @@ Mat openingMorphological(Mat img)
 	return img;
 }
 
+
 void show_image(string img_path, string window_name) {
 	Mat image = imread(img_path);
 	imshow(window_name, image);
 	waitKey(3000);
 }
+
 
 double reduced_central_moment(int p, int q, mass_center center, Mat img) {
 	double moment = 0;
@@ -57,12 +62,14 @@ double reduced_central_moment(int p, int q, mass_center center, Mat img) {
 	return moment;
 }
 
+
 double higher_moment(Mat img, mass_center center, int p, int q) {
 	double moment_0_0 = reduced_central_moment(0, 0, center, img);
 	double moment_p_q = reduced_central_moment(p, q, center, img);
 	double higher_moment = moment_p_q / pow(moment_0_0, 1 + (p + q) / 2);
 	return higher_moment;
 }
+
 
 double hue_moment(Mat img, mass_center center, int p, int q) {
 	double eta_2_0 = higher_moment(img, center, p, q);
@@ -136,7 +143,6 @@ mass_center get_center_of_Mass(Mat img) {
 }
 
 
-
 void test_center_of_mass() {
 	Mat img = imread("Resource/PEN.pgm");
 
@@ -170,7 +176,7 @@ void test_center_of_mass() {
 	imshow("thresh", img);
 	waitKey(0);
 }
-
+	
 
 Mat create_hist(Mat image, bool greyscale) {
 	while (true) {
@@ -233,7 +239,6 @@ Mat create_hist(Mat image, bool greyscale) {
 }
 
 
-
 Mat take_photo(bool greyscale, bool canny=false, int thresh=0) {
 	cv::VideoCapture camera(0);
 	if (!camera.isOpened()) {
@@ -280,11 +285,13 @@ Mat take_photo(bool greyscale, bool canny=false, int thresh=0) {
 	return frame;
 }
 
+
 void save_image(Mat image, string img_path, string image_save_format) {
 	string image_path_wo_extention = img_path.substr(0,img_path.find("."));
 	imwrite(image_path_wo_extention + image_save_format, image);
 	cout << "Image saved to: " << image_path_wo_extention << " as: " << image_save_format << endl;
 }
+
 
 void print_image_attributes(string img_path, string window_name, string file_type) {
 	Mat image = imread(img_path);
@@ -295,6 +302,27 @@ void print_image_attributes(string img_path, string window_name, string file_typ
 		cout << "Color format is BGR" << endl;
 	}
 }
+
+
+Mat filter_func(Mat img, int n, int m) {
+	// n: size of filter in horizontal direction
+	// m: size of filter in vertical direction
+	Mat img_filtered = img.clone();
+	float scaling = 1 / pow(n + m + 1, 2);
+
+	for (int i = n; i < img.cols-n; i++) {
+		for (int j = m; j < img.rows-m; j++) {
+			int values = 0;
+			for (int p = i - n; p < i + 2 * n; p++) {
+				for (int k = j - m; k < j + 2 * m; j++) {
+					values += img.at<uchar>(k, p);
+				}
+			}
+			img_filtered.at<uchar>(j, i) = scaling * values;
+		}
+	}
+}
+
 
 int main()
 {

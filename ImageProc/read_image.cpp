@@ -9,8 +9,8 @@ using namespace std;
 
 struct moments_data {
 	double theta;
-	int px;
-	int py;
+	double px;
+	double py;
 
 }mom;
 
@@ -46,9 +46,10 @@ void show_image(string img_path, string window_name) {
 
 double reduced_central_moment(int p, int q, mass_center center, Mat img) {
 	double moment = 0;
-	for (double i = 0; i < img.cols; i++) {
-		for (double j = 0; j < img.rows; j++) {
-			if (img.at<uchar>(j, i) != 0){
+	for (int i = 0; i < img.cols; i++) {
+		for (int j = 0; j < img.rows; j++) {
+			int pix_val = img.at<uchar>(j,i);
+			if (pix_val == 255){
 			moment += pow((i - center.x), p)*pow((j - center.y), q);
 			}
 		}
@@ -56,22 +57,33 @@ double reduced_central_moment(int p, int q, mass_center center, Mat img) {
 	return moment;
 }
 
+double higher_moment(Mat img, mass_center center, int p, int q) {
+	double moment_0_0 = reduced_central_moment(0, 0, center, img);
+	double moment_p_q = reduced_central_moment(p, q, center, img);
+	double higher_moment = moment_p_q / pow(moment_0_0, 1 + (p + q) / 2);
+	return higher_moment;
+}
+
+double hue_moment(Mat img, mass_center center, int p, int q) {
+	double eta_2_0 = higher_moment(img, center, p, q);
+	double eta_0_2 = higher_moment(img, center, q, p);
+	double hue_first = eta_0_2 + eta_2_0;
+	return hue_first;
+}
+
+
 void principal_axis(Mat img, mass_center center) {
 	double moment_0_0 = reduced_central_moment(0, 0, center, img);
-	cout << moment_0_0 << endl;
 
 	double moment_2_0 = reduced_central_moment(2, 0, center, img)/moment_0_0;
 	double moment_0_2 = reduced_central_moment(0, 2, center, img) / moment_0_0;
 	double moment_1_1 = reduced_central_moment(1, 1, center, img) / moment_0_0;
-	Moments m = moments(img, true);
 
-	mom.theta =  atan2((m.m20 -m.m02), (2 * m.m11) )/2;
-	//mom.theta =  atan2((moment_2_0 - moment_0_2), (2 * moment_1_1)) / 2;
+	mom.theta =  atan2((2 * moment_1_1), (moment_2_0 - moment_0_2)) / 2;
 	cout << "Principal Angle: " << mom.theta * (180.0 / 3.141592653589793238463) << endl;
 
-	mom.px = center.x + img.cols / 4 * cos(mom.theta);
-	mom.py = center.y + img.cols / 4 * sin(mom.theta);
-
+	mom.px = center.x + img.rows / 2 * cos(mom.theta);
+	mom.py = center.y + img.rows / 2 * sin(mom.theta);
 
 }
 
@@ -85,7 +97,6 @@ Mat image_threshold(Mat img, int thresh) {
 			else {
 				img.at<uchar>(j, i) = 255;
 			}
-
 		}
 	}
 	return img;
@@ -93,21 +104,21 @@ Mat image_threshold(Mat img, int thresh) {
 
 
 mass_center get_center_of_Mass(Mat img) {
-	int sumx = 0, sumy= 0, black_pix = 0;
+	int sumx = 0, sumy= 0, white_pix = 0;
 
 	for (int i = 0; i < img.cols; i++) {
 		for (int j = 0; j < img.rows; j++) {
 			if (img.at<uchar>(j,i) == 255) {
 				sumx += i;
 				sumy += j;
-				black_pix += 1;
+				white_pix += 1;
 			}
 
 		}
 	}
-	if (black_pix != 0) {
-		sumx /= black_pix;
-		sumy /= black_pix;
+	if (white_pix != 0) {
+		sumx /= white_pix;
+		sumy /= white_pix;
 	}
 	mass_center result = { sumx,sumy };
 	return result;
@@ -117,7 +128,10 @@ mass_center get_center_of_Mass(Mat img) {
 
 void test_center_of_mass() {
 	Mat img = imread("Resource/PEN.pgm");
-	//rotate(img, img, ROTATE_90_CLOCKWISE);
+
+	//Rect myROI(0, 0, 200, 200);
+	//Mat img = img_new(myROI);
+	Mat img_rotated;
 
 	cvtColor(img, img, COLOR_BGR2GRAY);
 	img = image_threshold(img,90);
@@ -129,6 +143,14 @@ void test_center_of_mass() {
 
 	mass_center result = get_center_of_Mass(img);
 	principal_axis(img, result);
+	rotate(img, img_rotated, ROTATE_90_CLOCKWISE);
+	double hue_moment_1 = hue_moment(img, result, 2, 0);
+	double hue_moment_rot = hue_moment(img_rotated, result, 2, 0);
+	Moments mome = moments(img, false);
+	double cv_hue_moment[7];
+	HuMoments(mome, cv_hue_moment);
+
+	cout << "Hue Moment: " << hue_moment_1 << endl << "Hue Moment rotated: " << hue_moment_rot << endl << "Opencv Hue Moments: "<< cv_hue_moment[0];
 	cvtColor(img, img, COLOR_GRAY2BGR);
 	line(img, Point(mom.px,mom.py), Point(result.x,result.y), Scalar(0, 0, 255),
 		2, LINE_4);
@@ -273,9 +295,9 @@ int main()
 
 	//show_image(img_path, window_name);
 	//print_image_attributes(img_path, window_name, file_type);
-	Mat image = take_photo(true, false, 100);
+	//Mat image = take_photo(true, false, 100);
 	//save_image(image, img_path, image_save_format);
-	//test_center_of_mass();
+	test_center_of_mass();
 	return 0;
 }
 

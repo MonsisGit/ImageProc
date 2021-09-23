@@ -78,6 +78,7 @@ double hue_moment(Mat img, mass_center center, int p, int q) {
 	return hue_first;
 }
 
+
 Mat pad_image(Mat img, int pad_width = 1, int pad_val = 0) {
 	Mat img_padded = Mat(img.rows + pad_width * 2, img.cols + pad_width * 2,
 		img.type(), Scalar(pad_val));
@@ -89,6 +90,7 @@ Mat pad_image(Mat img, int pad_width = 1, int pad_val = 0) {
 	}
 	return img_padded;
 }
+
 
 void principal_axis(Mat img, mass_center center) {
 	double moment_0_0 = reduced_central_moment(0, 0, center, img);
@@ -304,23 +306,28 @@ void print_image_attributes(string img_path, string window_name, string file_typ
 }
 
 
-Mat filter_func(Mat img, int n, int m) {
+Mat filter_func(Mat img, int n, int m, Mat filter) {
 	// n: size of filter in horizontal direction
 	// m: size of filter in vertical direction
 	Mat img_filtered = img.clone();
 	float scaling = 1 / pow(n + m + 1, 2);
 
 	for (int i = n; i < img.cols-n; i++) {
+		//cout << "i: " << i << endl;
 		for (int j = m; j < img.rows-m; j++) {
+			//cout << "j: " << j << endl;
 			int values = 0;
-			for (int p = i - n; p < i + 2 * n; p++) {
-				for (int k = j - m; k < j + 2 * m; j++) {
+			for (int p = i - n; p < i + n + 1; p++) {
+				//cout << "p: " << p << endl;
+				for (int k = j - m; k < j + m + 1; k++) {
+					//cout << "k: " << k << endl;
 					values += img.at<uchar>(k, p);
 				}
 			}
 			img_filtered.at<uchar>(j, i) = scaling * values;
 		}
 	}
+	return img_filtered;
 }
 
 
@@ -337,7 +344,21 @@ int main()
 	//print_image_attributes(img_path, window_name, file_type);
 	//Mat image = take_photo(true, false, 100);
 	//save_image(image, img_path, image_save_format);
-	test_center_of_mass();
+	//test_center_of_mass();
+
+	Mat img = imread(img_path);
+	cvtColor(img, img, COLOR_BGR2GRAY);
+	int n = 1;
+	int m = 1;
+	//float filter[] = { 1/9, 1/9, 1/9, 1/9, 1/9, 1/9, 1/9, 1/9, 1/9 };
+	Mat img_filtered = filter_func(img, n, m, filter);
+
+	window_name = "original";
+	imshow(window_name, img);
+	window_name = "filtered";
+	imshow(window_name, img_filtered);
+	waitKey(0);
+
 	return 0;
 }
 

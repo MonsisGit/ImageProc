@@ -306,25 +306,30 @@ void print_image_attributes(string img_path, string window_name, string file_typ
 }
 
 
-Mat filter_func(Mat img, int n, int m, Mat filter) {
+Mat filter_func(Mat img, int n, int m, double filter[]) {
 	// n: size of filter in horizontal direction
 	// m: size of filter in vertical direction
 	Mat img_filtered = img.clone();
-	float scaling = 1 / pow(n + m + 1, 2);
+	//float scaling = 1 / pow(n + m + 1, 2);
+	int position;
 
 	for (int i = n; i < img.cols-n; i++) {
 		//cout << "i: " << i << endl;
 		for (int j = m; j < img.rows-m; j++) {
 			//cout << "j: " << j << endl;
-			int values = 0;
+			float values = 0;
+			position = 0;
 			for (int p = i - n; p < i + n + 1; p++) {
 				//cout << "p: " << p << endl;
 				for (int k = j - m; k < j + m + 1; k++) {
 					//cout << "k: " << k << endl;
-					values += img.at<uchar>(k, p);
+					//cout << filter[position] << endl;
+					values += filter[position] * img.at<uchar>(k, p);
+					position++;
+					//cout << position << endl;
 				}
 			}
-			img_filtered.at<uchar>(j, i) = scaling * values;
+			img_filtered.at<uchar>(j, i) = values;
 		}
 	}
 	return img_filtered;
@@ -334,8 +339,8 @@ Mat filter_func(Mat img, int n, int m, Mat filter) {
 int main()
 {
 	const string Resource_path = "Resource/";
-	string image_save_format = ".png";
-	string img_path = Resource_path + "webcam_test.jpg";
+	string image_save_format = ".pgm";
+	string img_path = Resource_path + "PEN.pgm";
 	string window_name = "test";
 	string delimiter = ".";
 	string file_type = img_path.substr(img_path.find(delimiter) + 1, img_path.length());
@@ -348,9 +353,27 @@ int main()
 
 	Mat img = imread(img_path);
 	cvtColor(img, img, COLOR_BGR2GRAY);
-	int n = 1;
-	int m = 1;
-	//float filter[] = { 1/9, 1/9, 1/9, 1/9, 1/9, 1/9, 1/9, 1/9, 1/9 };
+	img = image_threshold(img, 100);
+
+	//int n = 1;
+	//int m = 1;
+	//double filter[] = { 1./9., 1./9., 1./9., 1./9., 1./9., 1./9., 1./9., 1./9., 1./9. };
+	
+	//int n = 2;
+	//int m = 2;
+	//double filter[] = {1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25.,		1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25.,		1./25., 1./25., 1./25., 1./25., 1./25. };
+	
+	int n = 4;
+	int m = 4;
+	double filter[] = { 0,		0,		1,		2,		2,		2,		1,		0,		0,
+						0,		1,		5,		10,		12,		10,		5,		1,		0,
+						1,		5,		15,		19,		16,		19,		15,		5,		1,
+						2,		10,		19,	   -19,	   -64,	   -19,		19,		10,		2,
+						2,		12,		16,	   -64,	   -148,   -64,		16,		12,		2,
+						2,		10,		19,	   -19,	   -64,	   -19,		19,		10,		2,
+						1,		5,		15,		19,		16,		19,		15,		5,		1,
+						0,		1,		5,		10,		12,		10,		5,		1,		0,
+						0,		0,		1,		2,		2,		2,		1,		0,		0};
 	Mat img_filtered = filter_func(img, n, m, filter);
 
 	window_name = "original";

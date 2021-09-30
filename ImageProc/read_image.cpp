@@ -387,6 +387,7 @@ int main()
 	cvtColor(img, img, COLOR_BGR2GRAY);
 	img = image_threshold(img, 100);
 
+	// https://en.wikipedia.org/wiki/Kernel_(image_processing)
 	
 	//int n = 2;
 	//int m = 2;
@@ -407,14 +408,14 @@ int main()
 						0,		0,		1,		2,		2,		2,		1,		0,		0};
 	*/
 
-	/*
+	
 	// Laplace Filter
 	int n = 1;
 	int m = 1;
 	double filter[] = { 0,		1,		0,
 						1,	   -4,		1,
 						0,		1,		0};
-	*/
+	
 
 	/*
 	// Gradient Filter
@@ -425,13 +426,14 @@ int main()
 					   -1,	    0,		1,
 						0,		1,		0 };
 	*/
-
+	/*
 	// Combined-Gradient Filter
 	int n = 1;
 	int m = 1;
 	double filter[] = { 1,		0,	   -1,
 						0,	    0,		0,
 					   -1,		0,		1 };
+	*/
 
 	Mat img_filtered = filter_func(img, n, m, filter);
 

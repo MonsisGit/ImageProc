@@ -117,6 +117,8 @@ Mat pad_image(Mat img, int pad_width = 1, int pad_val = 0) {
 			img_padded.at<uchar>(j, i) = img.at<uchar>(j-pad_width, i-pad_width);
 		}
 	}
+	imshow("pad", img_padded);
+
 	return img_padded;
 }
 
@@ -190,7 +192,7 @@ void test_fnc() {
 		img = openingMorphological(img);
 		k++;
 	}
-	t = pad_image(img, 2, 255);
+	t = pad_image(img, 20, 0);
 
 	mass_center result = get_center_of_Mass(img);
 	principal_axis(img, result);
@@ -380,7 +382,7 @@ int main()
 	//print_image_attributes(img_path, window_name, file_type);
 	//Mat image = take_photo(true, false, 100);
 	//save_image(image, img_path, image_save_format);
-	test_fnc();
+	//test_fnc();
 
 	Mat img = imread(img_path);
 	cvtColor(img, img, COLOR_BGR2GRAY);

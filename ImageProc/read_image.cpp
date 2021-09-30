@@ -176,6 +176,80 @@ mass_center get_center_of_Mass(Mat img) {
 }
 
 
+#define MAX_RAND 100000
+
+void p(unsigned char* pic,Mat img) {
+	for (int i = 0; i < 30; i++) {
+		for (int j = 0; j < img.cols; j++) {
+			cout << (int)pic[i * img.cols + j];
+		}
+		cout << endl << endl;
+	}
+}
+
+Mat contour_search(Mat img) {
+	unsigned char* pic = new unsigned char[img.rows * img.cols];
+	Mat c_img = Mat(img.rows, img.cols, img.type(), Scalar(0));
+	for (int i = 0; i < img.rows; i++) {
+		for (int j = 0; j < img.cols; j++) {
+			pic[i * img.cols + j] = img.at<uchar>(i,j);
+		}
+	}
+
+	int B = img.step;
+	int rimx[MAX_RAND], rimy[MAX_RAND];
+	int newpos, local_tresh = 0, draw_type, pos;
+	draw_type = 0;
+	for (int i = 0; i < img.rows * img.cols; i++){
+		if (pic[i] == 255) {
+			pos = i;
+			break;
+		}
+	}
+	newpos = pos;
+	int count = 0;
+	while (newpos >= 0L && newpos < img.rows * img.cols)
+	{
+ 		rimx[count] = newpos % B; // save current position in list
+		rimy[count] = newpos / B;
+		count++;
+		draw_type = (draw_type + 6) % 8; // Select next search direction
+		switch (draw_type)
+		{
+		case 0: if (pic[newpos + 1] > local_tresh) { newpos += 1; draw_type = 0; break; }
+		case 1: if (pic[newpos + B + 1] > local_tresh) { newpos += B + 1; draw_type = 1; break; }
+		case 2: if (pic[newpos + B] > local_tresh) { newpos += B; draw_type = 2; break; }
+		case 3: if (pic[newpos + B - 1] > local_tresh) { newpos += B - 1; draw_type = 3; break; }
+		case 4: if (pic[newpos - 1] > local_tresh) { newpos -= 1; draw_type = 4; break; }
+		case 5: if (pic[newpos - B - 1] > local_tresh) { newpos -= B + 1; draw_type = 5; break; }
+		case 6: if (pic[newpos - B] > local_tresh) { newpos -= B; draw_type = 6; break; }
+		case 7: if (pic[newpos - B + 1] > local_tresh) { newpos -= B - 1; draw_type = 7; break; }
+		case 8: if (pic[newpos + 1] > local_tresh) { newpos += 1; draw_type = 0; break; }
+		case 9: if (pic[newpos + B + 1] > local_tresh) { newpos += B + 1; draw_type = 1; break; }
+		case 10: if (pic[newpos + B] > local_tresh) { newpos += B; draw_type = 2; break; }
+		case 11: if (pic[newpos + B - 1] > local_tresh) {
+			newpos += B -
+				1; draw_type = 3; break;
+		}
+		case 12: if (pic[newpos - 1] > local_tresh) { newpos -= 1; draw_type = 4; break; }
+		case 13: if (pic[newpos - B - 1] > local_tresh) {
+			newpos -= B + 1; draw_type = 5; break;
+		}
+		case 14: if (pic[newpos - B] > local_tresh) { newpos -= B; draw_type = 6; break; }
+		}
+		if (newpos == pos) {
+			break;
+		}
+		if (count >= MAX_RAND)
+			break;
+	}
+	for (int i = 0; i < count ; i++) {
+			c_img.at<uchar>(rimy[i], rimx[i]) = 255;
+	}
+
+	delete[] pic;
+	return c_img;
+}
 void test_fnc() {
 	Mat img = imread("Resource/PEN.pgm");
 
@@ -192,7 +266,10 @@ void test_fnc() {
 		img = openingMorphological(img);
 		k++;
 	}
-	t = pad_image(img, 20, 0);
+	//t = pad_image(img, 20, 0);
+
+	Mat c_img = contour_search(img);
+	imshow("cont", c_img);
 
 	mass_center result = get_center_of_Mass(img);
 	principal_axis(img, result);
@@ -382,11 +459,11 @@ int main()
 	//print_image_attributes(img_path, window_name, file_type);
 	//Mat image = take_photo(true, false, 100);
 	//save_image(image, img_path, image_save_format);
-	//test_fnc();
+	test_fnc();
 
 	Mat img = imread(img_path);
 	cvtColor(img, img, COLOR_BGR2GRAY);
-	img = image_threshold(img, 100);
+	//img = image_threshold(img, 100);
 
 	//int n = 1;
 	//int m = 1;
@@ -413,6 +490,7 @@ int main()
 	imshow(window_name, img);
 	window_name = "filtered";
 	imshow(window_name, img_filtered);
+
 	waitKey(0);
 
 	return 0;

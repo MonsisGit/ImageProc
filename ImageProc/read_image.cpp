@@ -446,6 +446,7 @@ Mat filter_func(Mat img, int n, int m, double filter[]) {
 }
 
 
+
 int main()
 {
 	const string Resource_path = "Resource/";
@@ -465,14 +466,14 @@ int main()
 	cvtColor(img, img, COLOR_BGR2GRAY);
 	//img = image_threshold(img, 100);
 
-	//int n = 1;
-	//int m = 1;
-	//double filter[] = { 1./9., 1./9., 1./9., 1./9., 1./9., 1./9., 1./9., 1./9., 1./9. };
+	// https://en.wikipedia.org/wiki/Kernel_(image_processing)
 	
 	//int n = 2;
 	//int m = 2;
 	//double filter[] = {1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25.,		1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25., 1./25.,		1./25., 1./25., 1./25., 1./25., 1./25. };
 	
+	/*
+	// Laplace-Gauss-Filter
 	int n = 4;
 	int m = 4;
 	double filter[] = { 0,		0,		1,		2,		2,		2,		1,		0,		0,
@@ -484,6 +485,35 @@ int main()
 						1,		5,		15,		19,		16,		19,		15,		5,		1,
 						0,		1,		5,		10,		12,		10,		5,		1,		0,
 						0,		0,		1,		2,		2,		2,		1,		0,		0};
+	*/
+
+	
+	// Laplace Filter
+	int n = 1;
+	int m = 1;
+	double filter[] = { 0,		1,		0,
+						1,	   -4,		1,
+						0,		1,		0};
+	
+
+	/*
+	// Gradient Filter
+	// nur positive änderungen werden angezeitgt, für negative -> offset anpassen
+	int n = 1;
+	int m = 1;
+	double filter[] = { 0,	   -1,		0,
+					   -1,	    0,		1,
+						0,		1,		0 };
+	*/
+	/*
+	// Combined-Gradient Filter
+	int n = 1;
+	int m = 1;
+	double filter[] = { 1,		0,	   -1,
+						0,	    0,		0,
+					   -1,		0,		1 };
+	*/
+
 	Mat img_filtered = filter_func(img, n, m, filter);
 
 	window_name = "original";

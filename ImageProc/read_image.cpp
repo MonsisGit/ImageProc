@@ -70,6 +70,28 @@ double higher_moment(Mat img, mass_center center, int p, int q) {
 	return higher_moment;
 }
 
+string type2str(int type) {
+	string r;
+
+	uchar depth = type & CV_MAT_DEPTH_MASK;
+	uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+	switch (depth) {
+	case CV_8U:  r = "8U"; break;
+	case CV_8S:  r = "8S"; break;
+	case CV_16U: r = "16U"; break;
+	case CV_16S: r = "16S"; break;
+	case CV_32S: r = "32S"; break;
+	case CV_32F: r = "32F"; break;
+	case CV_64F: r = "64F"; break;
+	default:     r = "User"; break;
+	}
+
+	r += "C";
+	r += (chans + '0');
+
+	return r;
+}
 
 double hue_moment(Mat img, mass_center center, int p, int q) {
 	double eta_2_0 = higher_moment(img, center, p, q);
@@ -80,12 +102,19 @@ double hue_moment(Mat img, mass_center center, int p, int q) {
 
 
 Mat pad_image(Mat img, int pad_width = 1, int pad_val = 0) {
-	Mat img_padded = Mat(img.rows + pad_width * 2, img.cols + pad_width * 2,
-		img.type(), Scalar(pad_val));
 
-	for (int i = 0; i < img.cols; i++) {
-		for (int j = 0; j < img.rows; j++) {
-			img_padded.at<uchar>(j + pad_width, i + pad_width) = img.at<uchar>(j, i);
+	string ty = type2str(img.type());
+	if (ty != "8UC1") {
+		cout << "Converting img to greyscale of type 8UC1, was of type: " << ty.c_str() << " before" << endl;
+		cvtColor(img, img, COLOR_BGR2GRAY);
+
+	}
+	Mat img_padded = Mat(img.rows + pad_width*2, img.cols + pad_width*2,
+		img.type(), Scalar(pad_val));
+	cout << endl << img.type() << endl;
+	for (int i = pad_width; i < img.cols+pad_width; i++) {
+		for (int j = pad_width; j < img.rows+pad_width; j++) {
+			img_padded.at<uchar>(j, i) = img.at<uchar>(j-pad_width, i-pad_width);
 		}
 	}
 	return img_padded;
@@ -145,21 +174,23 @@ mass_center get_center_of_Mass(Mat img) {
 }
 
 
-void test_center_of_mass() {
+void test_fnc() {
 	Mat img = imread("Resource/PEN.pgm");
 
 	//Rect myROI(0, 0, 200, 200);
 	//Mat img = img_new(myROI);
-	Mat img_rotated;
-	//img = pad_image(img, 1, 0);
+	Mat img_rotated,t;
+
 
 	cvtColor(img, img, COLOR_BGR2GRAY);
+
 	img = image_threshold(img,90);
 	int k = 0;
 	while (k < 1) {
 		img = openingMorphological(img);
 		k++;
 	}
+	t = pad_image(img, 2, 255);
 
 	mass_center result = get_center_of_Mass(img);
 	principal_axis(img, result);
@@ -349,7 +380,7 @@ int main()
 	//print_image_attributes(img_path, window_name, file_type);
 	//Mat image = take_photo(true, false, 100);
 	//save_image(image, img_path, image_save_format);
-	//test_center_of_mass();
+	test_fnc();
 
 	Mat img = imread(img_path);
 	cvtColor(img, img, COLOR_BGR2GRAY);

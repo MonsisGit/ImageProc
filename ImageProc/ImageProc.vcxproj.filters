@@ -26,6 +26,18 @@
     <Image Include="Resource\webcam_test.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="D:\PIC1_L.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="D:\PIC1_R.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Resource\PIC1_R.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Resource\PIC1_L.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\Users\simon\Downloads\PEN.pgm">

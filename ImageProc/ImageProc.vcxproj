@@ -131,6 +131,10 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\..\Users\simon\OneDrive\Pictures\test_img.jpg" />
+    <Image Include="D:\PIC1_L.png" />
+    <Image Include="D:\PIC1_R.png" />
+    <Image Include="Resource\PIC1_L.png" />
+    <Image Include="Resource\PIC1_R.png" />
     <Image Include="Resource\webcam_test.png" />
   </ItemGroup>
   <ItemGroup>

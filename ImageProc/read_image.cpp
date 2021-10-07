@@ -2,6 +2,7 @@
 #include <stdio.h> 
 #include <iostream> 
 #include <cmath>
+#include <vector>
 #include<opencv2/opencv.hpp> 
 #include <opencv2/highgui/highgui.hpp>
 using namespace cv;
@@ -69,6 +70,20 @@ double higher_moment(Mat img, mass_center center, int p, int q) {
 	double higher_moment = moment_p_q / pow(moment_0_0, 1 + (p + q) / 2);
 	return higher_moment;
 }
+
+int add_filter(Mat img, int i, int j, int n, int m) {
+	float val = 0;
+	for (int p = i - n; p <= i + n; p++) {
+		for (int k = j - m; k <= j + m ; k++) {
+			val += img.at<uchar>(k, p);
+		}
+	}
+	return val;
+}
+
+
+
+
 
 string type2str(int type) {
 	string r;
@@ -445,6 +460,61 @@ Mat filter_func(Mat img, int n, int m, double filter[]) {
 	return img_filtered;
 }
 
+Mat find_correspondence(Mat img_1, Mat img_2) {
+
+	Mat img_1_cor = Mat(img_1.rows, img_1.cols, img_1.type(), Scalar(0));
+	Mat img_2_cor = Mat(img_1.rows, img_1.cols, img_1.type(), Scalar(0));
+	Mat img_contours, img_1_binary;
+	cvtColor(img_1, img_1, COLOR_BGR2GRAY);
+
+	img_contours = image_threshold(img_1, 200);
+	//img_contours = contour_search(img_1_binary);
+	//imshow("cont", img_contours);
+	//waitKey(0);
+
+	int n = 6, m = 6,cnt=0;
+
+	for (int i = n; i < img_1.cols-n; i++) {
+		for (int j = m; j < img_1.rows-m; j++) {
+			if (img_contours.at<uchar>(j, i) > 0) {
+				img_1_cor.at<uchar>(j, i) = add_filter(img_1, i, j, n, m);
+			}
+			img_2_cor.at<uchar>(j, i) = add_filter(img_2, i, j, n, m);
+		}
+	}
+	int l2,tmp, k_tmp, l_tmp;
+	vector<int> posx,posy,l2_diff;
+
+	for (int i = n; i <= img_1.cols-n; i++) {
+		for (int j = m ; j <= img_1.rows-m; j++) {
+
+			if (img_1_cor.at<uchar>(j, i) != 0) {
+				posx.push_back(i);
+				posy.push_back(j);
+
+				l2 = 10e8;
+				l_tmp = 0; k_tmp = 0;
+				for (int k = n; k <= img_1.cols-n; k++) {
+					for (int l = m; l <= img_1.rows-m; l++) {
+						tmp = abs(img_1_cor.at<uchar>(j, i) - img_2_cor.at<uchar>(l,k));
+						if (tmp < l2) {
+							l2 = tmp;
+							l_tmp = l;
+							k_tmp = k;
+
+						}
+					}
+				}
+				l2_diff.push_back(tmp);
+				posx.push_back(k_tmp);
+				posy.push_back(l_tmp);
+				cout << "i,j dist: " << i << " " << j << "L2 dist : " << l2_diff[l2_diff.size()-1] << "  With pos x, y : " << posx[posx.size()-1] << " " << posy[posy.size() - 1] << endl;
+			}
+		}
+	}
+	return img_1;
+}
+	
 
 
 int main()
@@ -460,11 +530,15 @@ int main()
 	//print_image_attributes(img_path, window_name, file_type);
 	//Mat image = take_photo(true, false, 100);
 	//save_image(image, img_path, image_save_format);
-	test_fnc();
+	//test_fnc();
 
 	Mat img = imread(img_path);
 	cvtColor(img, img, COLOR_BGR2GRAY);
 	//img = image_threshold(img, 100);
+	Mat img_1, img_2;
+	img_1 = imread("Resource/PIC1_L.png");
+	img_2 = imread("Resource/PIC1_R.png");
+	img = find_correspondence(img_1, img_2);
 
 	// https://en.wikipedia.org/wiki/Kernel_(image_processing)
 	
@@ -514,14 +588,14 @@ int main()
 					   -1,		0,		1 };
 	*/
 
-	Mat img_filtered = filter_func(img, n, m, filter);
+	//Mat img_filtered = filter_func(img, n, m, filter);
 
-	window_name = "original";
+	/*window_name = "original";
 	imshow(window_name, img);
 	window_name = "filtered";
 	imshow(window_name, img_filtered);
 
-	waitKey(0);
+	waitKey(0);*/
 
 	return 0;
 }
